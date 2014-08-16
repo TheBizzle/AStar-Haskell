@@ -14,6 +14,6 @@ module AStar.AStarLike(getFreshLoc, maxItersBy) where
   maxItersBy rows cols branchingFactor = rows |> ((*cols) >>> fromIntegral >>> (*branchingFactor) >>> floor)
 
   getFreshLoc :: (Coordinate -> Bool) -> CoordQueue -> Maybe (PriorityCoordinate, CoordQueue)
-  getFreshLoc queue checkIsFamiliar = view trimmedQueue
+  getFreshLoc checkIsFamiliar queue = view trimmedQueue
     where
       trimmedQueue = Heap.dropWhile (coord >>> checkIsFamiliar) queue
