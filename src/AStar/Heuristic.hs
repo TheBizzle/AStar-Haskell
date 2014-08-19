@@ -1,4 +1,4 @@
-module AStar.Heuristic(euclideanDistance, manhattanDistance) where
+module AStar.Heuristic(euclideanDistance, HeuristicFunc, manhattanDistance) where
 
   import Control.Arrow
 
@@ -6,12 +6,15 @@ module AStar.Heuristic(euclideanDistance, manhattanDistance) where
 
   a |> f = f a
 
-  euclideanDistance :: Coordinate -> Coordinate -> Double
+  type HeuristicFunc = Coordinate -> Coordinate -> Double
+
+  euclideanDistance :: HeuristicFunc
   euclideanDistance (Coord x1 y1) (Coord x2 y2) = expDist |> (fromIntegral >>> sqrt)
     where
-      expDist = (x1 - x2) ^ 2 + (y1 - y2) ^ 2
+      squared = (^(2 :: Int))
+      expDist = (x1 - x2) |> squared + (y1 - y2) |> squared
 
-  manhattanDistance :: Coordinate -> Coordinate -> Double
+  manhattanDistance :: HeuristicFunc
   manhattanDistance (Coord x1 y1) (Coord x2 y2) = fromIntegral dist
     where
       dist = (abs $ x1 - x2) + (abs $ y1 - y2)
