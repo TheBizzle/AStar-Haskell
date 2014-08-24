@@ -1,4 +1,4 @@
-module AStar.AStarLike(getFreshLoc, initialize, maxItersBy, performAStar) where
+module AStar.AStarLike(runAStar) where
 
   import Control.Arrow
   import Control.Monad.State
@@ -20,6 +20,13 @@ module AStar.AStarLike(getFreshLoc, initialize, maxItersBy, performAStar) where
 
   type CoordQueue = Heap MinPolicy (PriorityBundle LocationData)
   type AStarState = State AStarStepData
+
+  runAStar :: PathingMapString -> (Status, AStarStepData)
+  runAStar = initialize >>> run
+    where
+      decide (Continue, sd) = run sd
+      decide x              = x
+      run                   = (runState performAStar) >>> decide
 
   performAStar :: AStarState Status
   performAStar = do
