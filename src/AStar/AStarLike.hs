@@ -33,7 +33,7 @@ module AStar.AStarLike(runAStar) where
     SD _ gsdArr _ queue _ visiteds <- get
     let popped      = getFreshLoc (\x -> member x visiteds) queue
     let updateSD    = (\c h a g s -> s { queue = h, gridSDArr = a // [(c, Just g)] })
-    let g           = (\((PBundle _ loc@(Loc coord gsd)), heap) -> modify' (updateSD coord heap gsdArr gsd) >> (doIteration loc))
+    let g           = (\(PBundle _ loc@(Loc coord gsd), heap) -> modify' (updateSD coord heap gsdArr gsd) >> (doIteration loc))
     let maybeResult = Traversable.mapM g popped
     fmap (fromMaybe Failure) maybeResult
 
@@ -91,7 +91,7 @@ module AStar.AStarLike(runAStar) where
       maxIters      = maxItersBy maxX maxY 1.0
       queue         = Heap.empty
       startData     = GridSD (Source start) 0
-      gridSD        = (fmap (\_ -> Nothing) grid) // [(start, Just $ startData)]
+      gridSD        = (fmap (\_ -> Nothing) grid) // [(start, Just startData)]
       immData       = ImmSD heuristicFunc maxIters grid goal
 
   data AStarStepData
