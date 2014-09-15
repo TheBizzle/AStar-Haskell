@@ -21,11 +21,12 @@ module AStar.AStarLike(runAStar) where
   type CoordQueue = Heap MinPolicy (PriorityBundle LocationData)
   type AStarState = State AStarStepData
 
-  runAStar :: PathingMapString -> (Status, AStarStepData)
+  runAStar :: PathingMapString -> (RunResult, AStarStepData)
   runAStar = initialize >>> run
     where
       decide (Continue, sd) = run sd
-      decide x              = x
+      decide (Failure, x)   = (FailedRun, x)
+      decide (Success, x)   = (SuccessfulRun, x)
       run                   = (runState performAStar) >>> decide
 
   performAStar :: AStarState Status
