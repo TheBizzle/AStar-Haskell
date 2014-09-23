@@ -39,7 +39,12 @@ test-suite tests
     array                      >= 0.4,
     astar-bizzle               >= 0.1.0,
     base                       >= 4.6 && < 5,
+    containers                 >= 0.5,
     HUnit                      >= 1.2,
+    lame-tester                >= 0.2.2,
+    lens                       >= 4.3,
     pathfindingcore            >= 0.1.16,
+    semigroups                 >= 0.9,
     test-framework             >= 0.8,
-    test-framework-hunit       >= 0.3
+    test-framework-hunit       >= 0.3,
+    validation                 >= 0.3
