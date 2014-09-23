@@ -67,8 +67,8 @@ runThatTest (PathingMapTest distMaybe pms) = analyzeResult distMaybe result sd
 analyzeResult :: (Show n, Num n) => Maybe n -> RunResult -> AStarStepData -> ResultType
 analyzeResult (Just x) SuccessfulRun sd = _Success # "Pathfinding successful"
 analyzeResult Nothing  FailedRun     sd = _Success # "Pathfinding failed successfully"
-analyzeResult (Just x) _             sd = failResult (\(badNum, asciiMap) -> printf "Expected to reach goal in %d steps, but it took %s steps.  Here's the map:\n\n%s" (show x) (show badNum) (show asciiMap)) sd
-analyzeResult Nothing  _             sd = failResult (\(badNum, asciiMap) -> printf "Did not expect to reach goal, but I somehow did in %d steps.  Here's the map:\n\n%s"       (show badNum) (show asciiMap)) sd
+analyzeResult (Just x) _             sd = failResult (\(badNum, asciiMap) -> printf "Expected to reach goal in %s steps, but it took %s steps.  Here's the map:\n\n%s" (show x) (show badNum) (show asciiMap)) sd
+analyzeResult Nothing  _             sd = failResult (\(badNum, asciiMap) -> printf "Did not expect to reach goal, but I somehow did in %s steps.  Here's the map:\n\n%s"       (show badNum) (show asciiMap)) sd
 
 failResult :: ((Double, String) -> String) -> AStarStepData -> Validation (NonEmpty String) String
 failResult f sd = _Failure # (sd |> (processData >>> f >>> (:| [])))
