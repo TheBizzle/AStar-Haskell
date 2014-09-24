@@ -25,7 +25,7 @@ library
     containers      >= 0.5,
     heap            >= 1.0,
     mtl             >= 2.2,
-    pathfindingcore >= 0.1.16
+    pathfindingcore >= 0.1.17
   GHC-Options:
     -Wall
     -fno-warn-name-shadowing
@@ -43,7 +43,7 @@ test-suite tests
     HUnit                      >= 1.2,
     lame-tester                >= 0.2.2,
     lens                       >= 4.3,
-    pathfindingcore            >= 0.1.16,
+    pathfindingcore            >= 0.1.17,
     semigroups                 >= 0.9,
     test-framework             >= 0.8,
     test-framework-hunit       >= 0.3,
