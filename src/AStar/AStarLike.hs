@@ -47,17 +47,17 @@ module AStar.AStarLike(runAStar) where
 
   doIterationH :: LocationData -> AStarState Status
   doIterationH freshLoc@(Loc freshCoord _) = do
-    sd@(SD (ImmSD _ _ _ goal) _ _ _ iters visiteds) <- doIterationHH
+    sd@(SD (ImmSD _ _ _ goal) _ _ _ iters visiteds) <- doIterationHH freshCoord
     let newSet   = Set.insert freshCoord visiteds
     let newIters = iters + 1
     put $ sd { visiteds = newSet, iters = newIters, locPair = freshLoc }
     return $ if goal == freshCoord then Success else Continue
 
-  doIterationHH :: AStarState AStarStepData
-  doIterationHH = do
-    SD (ImmSD _ _ grid _) _ (Loc loc _) _ _ visiteds <- get
+  doIterationHH :: Coordinate -> AStarState AStarStepData
+  doIterationHH freshCoord = do
+    SD (ImmSD _ _ grid _) _ _ _ _ visiteds <- get
     let f = (\neighbor -> when (not $ member neighbor visiteds) $ modify' $ modifyStepState neighbor)
-    let newState = mapM_ f $ neighborsOf loc grid
+    let newState = mapM_ f $ neighborsOf freshCoord grid
     mapState (\(_, s) -> (s, s)) newState
 
   modifyStepState :: Coordinate -> AStarStepData -> AStarStepData
