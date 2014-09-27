@@ -51,8 +51,7 @@ module AStar.AStarLike(runAStar) where
     let newSet   = Set.insert freshCoord visiteds
     let newIters = iters + 1
     put $ sd { visiteds = newSet, iters = newIters, locPair = freshLoc }
-    let status = if goal == freshCoord then Success else Continue
-    gets (\_ -> status)
+    return $ if goal == freshCoord then Success else Continue
 
   doIterationHH :: AStarState AStarStepData
   doIterationHH = do
