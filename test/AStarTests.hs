@@ -1,5 +1,7 @@
 module AStarTests(tests) where
 
+import System.IO.Unsafe
+
 import Test.Framework.Providers.API as API
 import Test.Framework.Providers.HUnit
 import Test.HUnit
