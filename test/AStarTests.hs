@@ -42,7 +42,11 @@ testBundle = (zipFrom genNums genResults) >>> (fmap evalResult)
     genNums    = cellsToSettings >>> testNums >>> Set.toList
 
 evalResult :: (Int, TestResult) -> API.Test
-evalResult (n, r) = testCase (show n) $ r @?= TestSuccess
+evalResult (n, r) = testCase (show n) assertion
+  where
+    res TestSuccess       = True
+    res (TestFailure msg) = seq (unsafePerformIO $ putStrLn msg) False
+    assertion             = True @?= (res r)
 
 zipTuple :: ([a], [b]) -> [(a, b)]
 zipTuple (as, bs) = zip as bs
