@@ -33,29 +33,29 @@ module AStar.AStarLike(runAStar) where
   performAStar = do
     SD _ gsdArr _ queue _ visiteds <- get
     let popped      = getFreshLoc (\x -> member x visiteds) queue
-    let updateSD    = (\c h a g s -> s { queue = h, gridSDArr = a // [(c, Just g)] })
-    let g           = (\(PBundle _ loc@(Loc coord gsd), heap) -> modify' (updateSD coord heap gsdArr gsd) >> (doIteration loc))
+    let updateSD    = (\h a l@(Loc c g) s -> s { queue = h, gridSDArr = a // [(c, Just g)], locPair = l })
+    let g           = (\(PBundle _ loc, heap) -> modify' (updateSD heap gsdArr loc) >> doIteration)
     let maybeResult = Traversable.mapM g popped
     fmap (fromMaybe Failure) maybeResult
 
-  doIteration :: LocationData -> AStarState Status
-  doIteration freshLoc = do
+  doIteration :: AStarState Status
+  doIteration = do
     SD (ImmSD _ maxIters _ _) _ _ _ iters _ <- get
     if (iters < maxIters)
-      then doIterationH freshLoc
+      then doIterationH
       else return Failure
 
-  doIterationH :: LocationData -> AStarState Status
-  doIterationH freshLoc@(Loc freshCoord _) = do
-    sd@(SD (ImmSD _ _ _ goal) _ _ _ iters visiteds) <- doIterationHH freshCoord
+  doIterationH :: AStarState Status
+  doIterationH = do
+    sd@(SD (ImmSD _ _ _ goal) _ (Loc freshCoord _) _ iters visiteds) <- doIterationHH
     let newSet   = Set.insert freshCoord visiteds
     let newIters = iters + 1
-    put $ sd { visiteds = newSet, iters = newIters, locPair = freshLoc }
+    put $ sd { visiteds = newSet, iters = newIters }
     return $ if goal == freshCoord then Success else Continue
 
-  doIterationHH :: Coordinate -> AStarState AStarStepData
-  doIterationHH freshCoord = do
-    SD (ImmSD _ _ grid _) _ _ _ _ visiteds <- get
+  doIterationHH :: AStarState AStarStepData
+  doIterationHH = do
+    SD (ImmSD _ _ grid _) _ (Loc freshCoord _) _ _ visiteds <- get
     let f = (\neighbor -> when (not $ member neighbor visiteds) $ modify' $ modifyStepState neighbor)
     let newState = mapM_ f $ neighborsOf freshCoord grid
     mapState (\(_, s) -> (s, s)) newState
