@@ -90,7 +90,7 @@ module AStar.AStarLike(runAStar) where
       (_, Coord maxX maxY) = bounds grid
       heuristicFunc = manhattanDistance goal
       maxIters      = maxItersBy maxX maxY 1.0
-      queue         = Heap.empty
       startData     = GridSD (Source start) 0
+      queue         = Heap.fromList [PBundle 0 $ Loc start startData]
       gridSD        = (fmap (\_ -> Nothing) grid) // [(start, Just startData)]
       immData       = ImmSD heuristicFunc maxIters grid goal
