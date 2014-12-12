@@ -8,11 +8,12 @@ import PathFindingCore.PathingMap.Coordinate(Breadcrumb, Coordinate)
 import PathFindingCore.PathingMap.Interpreter(PathingGrid)
 
 type CoordQueue = Heap MinPolicy (PriorityBundle LocationData)
+type SDGrid     = Array Coordinate (Maybe GridStepData)
 
 data AStarStepData
   = SD {
     unSD      :: ImmutableStepData,
-    gridSDArr :: Array Coordinate (Maybe GridStepData),
+    gridSDArr :: SDGrid,
     locPair   :: LocationData,
     queue     :: CoordQueue,
     iters     :: Int,

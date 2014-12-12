@@ -52,14 +52,11 @@ evalResult (n, r) = testCase (show n) assertion
     res (TestFailure msg) = seq (unsafePerformIO $ putStrLn msg) False
     assertion             = True @?= (res r)
 
-zipTuple :: ([a], [b]) -> [(a, b)]
-zipTuple (as, bs) = zip as bs
-
-diverge :: (x -> a) -> (x -> b) -> x -> (a, b)
-diverge fa fb x = (fa x, fb x)
-
 zipFrom :: (x -> [a]) -> (x -> [b]) -> x -> [(a, b)]
-zipFrom fas fbs x = zipTuple (diverge fas fbs x)
+zipFrom fas fbs = (diverge fas fbs) >>> zipTuple
+  where
+    zipTuple (as, bs) = zip as bs
+    diverge fa fb x   = (fa x, fb x)
 
 defaultTestSuite :: Suite PathingMapTest String String
 defaultTestSuite = Suite testMap runThatTest failsToStr id
