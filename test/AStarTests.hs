@@ -1,34 +1,37 @@
 module AStarTests(tests) where
 
-import System.IO.Unsafe
+import System.IO.Unsafe(unsafePerformIO)
 
-import Control.Arrow
+import Control.Arrow((>>>))
 import Control.Lens.Review((#))
 
-import Data.List.NonEmpty as NEL hiding (unlines, zip)
-import Data.Map           as Map
-import Data.Set           as Set
-import Data.Validation
+import Data.List.NonEmpty(NonEmpty((:|)))
+import Data.Validation(_Failure, _Success, Validation)
+
+import qualified Data.List.NonEmpty as NEL
+import qualified Data.Map           as Map
+import qualified Data.Set           as Set
 
 import Test.Tasty(testGroup, TestTree)
 import Test.Tasty.HUnit((@?=), testCase)
 
-import Text.Printf
+import Text.Printf(printf)
 
-import Tester.Dialect
-import Tester.RunSettings
-import Tester.Suite
+import Tester.Dialect(FlagCells, runningTo)
+import Tester.RunSettings(cellsToSettings, testNums)
+import Tester.Suite(Result, runTests, Suite(Suite), TestResult(TestFailure, TestSuccess))
 
-import PathFindingTest.TestSet as TestSet(PathingMapTest(..))
-import qualified PathFindingTest.TestSet as TestSet(tests)
+import PathFindingTest.TestSet(PathingMapTest(..))
 
-import PathFindingCore.PathingMap
-import PathFindingCore.PathingMap.Coordinate
-import PathFindingCore.PathingMap.Interpreter
-import PathFindingCore.Status(RunResult(..))
+import qualified PathFindingTest.TestSet as TestSet
 
-import AStar.AStarData
-import AStar.AStarLike
+import PathFindingCore.PathingMap(insertPath, PrintablePathingGrid(PPG))
+import PathFindingCore.PathingMap.Coordinate(breadcrumbsToList)
+import PathFindingCore.PathingMap.Interpreter()
+import PathFindingCore.Status(RunResult(FailedRun, SuccessfulRun))
+
+import AStar.AStarData(AStarStepData(SD), GridStepData(GridSD), ImmutableStepData(ImmSD), LocationData(Loc))
+import AStar.AStarLike(runAStar)
 
 a |> f = f a
 

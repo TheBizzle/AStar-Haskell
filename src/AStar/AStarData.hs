@@ -1,11 +1,11 @@
 module AStar.AStarData where
 
-import Data.Array.IArray
-import Data.Heap
-import Data.Set
+import Data.Array.IArray(Array)
+import Data.Heap(Heap, MinPolicy)
+import Data.Set(Set)
 
-import PathFindingCore.PathingMap.Coordinate
-import PathFindingCore.PathingMap.Interpreter
+import PathFindingCore.PathingMap.Coordinate(Breadcrumb, Coordinate)
+import PathFindingCore.PathingMap.Interpreter(PathingGrid)
 
 type CoordQueue = Heap MinPolicy (PriorityBundle LocationData)
 

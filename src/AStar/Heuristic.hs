@@ -1,8 +1,8 @@
 module AStar.Heuristic(euclideanDistance, HeuristicFunc, manhattanDistance) where
 
-import Control.Arrow
+import Control.Arrow((>>>))
 
-import PathFindingCore.PathingMap.Coordinate
+import PathFindingCore.PathingMap.Coordinate(Coordinate(Coord))
 
 a |> f = f a
 

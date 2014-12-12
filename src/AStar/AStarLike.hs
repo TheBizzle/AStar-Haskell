@@ -1,21 +1,24 @@
 module AStar.AStarLike(runAStar) where
 
-import Control.Arrow
-import Control.Monad.State
+import Control.Arrow((>>>))
+import Control.Monad.State(get, mapState, modify', put, runState, State, when)
 
-import Data.Array.IArray
-import Data.Heap        as Heap
-import Data.Maybe
-import Data.Set         as Set
-import Data.Traversable as Traversable
+import Data.Array.IArray((!), (//), bounds)
+import Data.Heap(view)
+import Data.Maybe(fromMaybe)
+import Data.Set(member)
 
-import PathFindingCore.PathingMap
-import PathFindingCore.PathingMap.Coordinate
-import PathFindingCore.PathingMap.Interpreter
-import PathFindingCore.Status
+import qualified Data.Heap        as Heap
+import qualified Data.Set         as Set
+import qualified Data.Traversable as Traversable
 
-import AStar.AStarData
-import AStar.Heuristic
+import PathFindingCore.PathingMap(neighborsOf)
+import PathFindingCore.PathingMap.Coordinate(Breadcrumb(Crumb, Source), Coordinate(Coord))
+import PathFindingCore.PathingMap.Interpreter(fromMapString, PathingMapData(PathingMapData), PathingMapString)
+import PathFindingCore.Status(RunResult(FailedRun, SuccessfulRun), Status(Continue, Failure, Success))
+
+import AStar.AStarData(AStarStepData(gridSDArr, iters, locPair, queue, SD, visiteds), CoordQueue, GridStepData(cost, GridSD), ImmutableStepData(ImmSD), LocationData(lcoord, Loc), PriorityBundle(item, PBundle))
+import AStar.Heuristic(manhattanDistance)
 
 a |> f = f a
 
