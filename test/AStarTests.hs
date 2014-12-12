@@ -2,10 +2,6 @@ module AStarTests(tests) where
 
 import System.IO.Unsafe
 
-import Test.Framework.Providers.API as API
-import Test.Framework.Providers.HUnit
-import Test.HUnit
-
 import Control.Arrow
 import Control.Lens.Review((#))
 
@@ -13,6 +9,9 @@ import Data.List.NonEmpty as NEL hiding (unlines, zip)
 import Data.Map           as Map
 import Data.Set           as Set
 import Data.Validation
+
+import Test.Tasty(testGroup, TestTree)
+import Test.Tasty.HUnit((@?=), testCase)
 
 import Text.Printf
 
@@ -37,13 +36,13 @@ type ResultType = Result String String
 
 tests = testGroup "Test interpreter" $ testBundle $ 1 `runningTo` 39
 
-testBundle :: FlagCells -> [API.Test]
+testBundle :: FlagCells -> [TestTree]
 testBundle = (zipFrom genNums genResults) >>> (fmap evalResult)
   where
     genResults = flip runTests defaultTestSuite
     genNums    = cellsToSettings >>> testNums >>> Set.toList
 
-evalResult :: (Int, TestResult) -> API.Test
+evalResult :: (Int, TestResult) -> TestTree
 evalResult (n, r) = testCase (show n) assertion
   where
     res TestSuccess       = True

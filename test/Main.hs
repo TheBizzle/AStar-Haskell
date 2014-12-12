@@ -1,6 +1,6 @@
 module Main where
 
 import AStarTests as AStar
-import Test.Framework.Runners.Console (defaultMain)
+import Test.Tasty(defaultMain)
 
-main = defaultMain $ [AStar.tests]
+main = defaultMain AStar.tests
