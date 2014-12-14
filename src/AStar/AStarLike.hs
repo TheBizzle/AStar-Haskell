@@ -1,5 +1,7 @@
 module AStar.AStarLike(runAStar) where
 
+import Prelude hiding (iterate)
+
 import Control.Arrow((>>>))
 import Control.Monad.State(get, mapState, modify', put, runState, State, when)
 
@@ -38,51 +40,46 @@ performAStar =
   do
     SD _ gsdArr _ queue _ visiteds <- get
     let poppedDataAndQueue = getFreshLoc (flip member visiteds) queue
-    let maybeStatus        = iterateForStatus gsdArr poppedDataAndQueue
-    fmap (fromMaybe Failure) maybeStatus
+    let state              = iterateForStatus gsdArr poppedDataAndQueue
+    fmap (fromMaybe Failure) state
   where
+    updateState :: SDGrid -> (PLocData, CoordQueue) -> AStarState ()
+    updateState gsdArr (PBundle _ loc, heap) = modify' $ updateStepData heap gsdArr loc
+
     updateStepData :: CoordQueue -> SDGrid -> LocationData -> AStarStepData -> AStarStepData
     updateStepData heap grid loc@(Loc coord gridSD) sd = sd { queue = heap, gridSDArr = updatedGrid, locPair = loc }
       where
         updatedGrid = grid // [(coord, Just gridSD)]
 
-    updateState :: SDGrid -> (PLocData, CoordQueue) -> AStarState ()
-    updateState gsdArr (PBundle _ loc, heap) = modify' $ updateStepData heap gsdArr loc
-
     iterateForStatus :: SDGrid -> Maybe (PLocData, CoordQueue) -> AStarState (Maybe Status)
-    iterateForStatus grid = Traversable.mapM ((updateState grid) >>> (>> doIteration))
+    iterateForStatus grid = Traversable.mapM $ (updateState grid) >>> (>> iterate)
 
-doIteration :: AStarState Status
-doIteration =
+iterate :: AStarState Status
+iterate =
   do
     SD (ImmSD _ maxIters _ _) _ _ _ iters _ <- get
     if (iters < maxIters)
-      then doIterationH
+      then do
+        sd@(SD (ImmSD _ _ _ goal) _ (Loc freshCoord _) _ iters' visiteds) <- iterateOnNeighbors
+        let newSet = Set.insert freshCoord visiteds
+        put $ sd { visiteds = newSet, iters = iters' + 1 }
+        return $ if goal == freshCoord
+                   then Success
+                   else Continue
       else return Failure
 
-doIterationH :: AStarState Status
-doIterationH =
-  do
-    sd@(SD (ImmSD _ _ _ goal) _ (Loc freshCoord _) _ iters visiteds) <- doIterationHH
-    let newSet   = Set.insert freshCoord visiteds
-    let newIters = iters + 1
-    put $ sd { visiteds = newSet, iters = newIters }
-    return $ if goal == freshCoord
-               then Success
-               else Continue
-
-doIterationHH :: AStarState AStarStepData
-doIterationHH =
+iterateOnNeighbors :: AStarState AStarStepData
+iterateOnNeighbors =
   do
     SD (ImmSD _ _ grid _) _ (Loc freshCoord _) _ _ visiteds <- get
     let newState = mapM_ (updateStateIfFresh visiteds) $ neighborsOf freshCoord grid
     mapState (\(_, s) -> (s, s)) newState
   where
     updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
-    updateStateIfFresh seen neighbor = when (not $ member neighbor seen) $ modify' $ modifyStepState neighbor
+    updateStateIfFresh seen neighbor = when (not $ member neighbor seen) $ modify' $ visitNeighbor neighbor
 
-modifyStepState :: Coordinate -> AStarStepData -> AStarStepData
-modifyStepState neighbor sd@(SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = freshSD
+visitNeighbor :: Coordinate -> AStarStepData -> AStarStepData
+visitNeighbor neighbor sd@(SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = freshSD
   where
     newCost = lC + 1
     freshSD = gridSD |> ((! neighbor) >>> (fmap $ cost >>> (newCost <)) >>> process)
