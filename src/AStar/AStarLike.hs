@@ -57,12 +57,12 @@ performAStar =
 iterate :: AStarState Status
 iterate =
   do
-    SD (ImmSD _ maxIters _ _) _ _ _ iters _ <- get
+    SD (ImmSD _ maxIters _ goal) _ (Loc freshCoord _) _ iters visiteds <- get
     if (iters < maxIters)
       then do
-        sd@(SD (ImmSD _ _ _ goal) _ (Loc freshCoord _) _ iters' visiteds) <- iterateOnNeighbors
+        sd <- iterateOnNeighbors
         let newSet = Set.insert freshCoord visiteds
-        put $ sd { visiteds = newSet, iters = iters' + 1 }
+        put $ sd { visiteds = newSet, iters = iters + 1 }
         return $ if goal == freshCoord
                    then Success
                    else Continue
@@ -76,21 +76,20 @@ iterateOnNeighbors =
     mapState (\(_, s) -> (s, s)) newState
   where
     updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
-    updateStateIfFresh seen neighbor = when (not $ member neighbor seen) $ modify' $ visitNeighbor neighbor
+    updateStateIfFresh seen neighbor = when (not $ member neighbor seen) $ modify' (\sd -> sd { queue = enqueueNeighbor neighbor sd })
 
-visitNeighbor :: Coordinate -> AStarStepData -> AStarStepData
-visitNeighbor neighbor sd@(SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = freshSD
+enqueueNeighbor :: Coordinate -> AStarStepData -> CoordQueue
+enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = updatedQueue
   where
     newCost = lC + 1
-    freshSD = gridSD |> ((! neighbor) >>> (fmap $ cost >>> (newCost <)) >>> process)
+    updatedQueue = gridSD |> ((! neighbor) >>> (fmap $ cost >>> (newCost <)) >>> genQueue)
       where
-        process (Just False) = sd --Data exists and the new cost isn't any better
-        process _            = sd { queue = newQueue }
+        genQueue (Just False) = queue --Data exists and the new cost isn't any better
+        genQueue _            = Heap.insert pcor queue
           where
             hValue   = hValueOf neighbor
             loc      = Loc neighbor $ GridSD (Crumb neighbor lB) newCost
             pcor     = PBundle (newCost + hValue) loc
-            newQueue = Heap.insert pcor queue
 
 maxItersBy :: Int -> Int -> Double -> Int
 maxItersBy rows cols branchingFactor = rows |> ((*cols) >>> fromIntegral >>> (*branchingFactor) >>> floor)
