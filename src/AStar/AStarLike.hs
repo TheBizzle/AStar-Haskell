@@ -1,13 +1,14 @@
+{-# LANGUAGE MultiWayIf #-}
 module AStar.AStarLike(runAStar) where
 
 import Prelude hiding (iterate)
 
 import Control.Arrow((>>>))
-import Control.Monad.State(get, mapState, modify', put, runState, State, when)
+import Control.Monad.State(get, modify, runState, State, when)
 
 import Data.Array.IArray((!), (//), bounds)
 import Data.Heap(view)
-import Data.Maybe(fromMaybe)
+import Data.Maybe(isJust)
 import Data.Set(member, Set)
 
 import qualified Data.Heap        as Heap
@@ -30,53 +31,27 @@ type PLocData   = PriorityBundle LocationData
 runAStar :: PathingMapString -> (RunResult, AStarStepData)
 runAStar = initialize >>> run
   where
-    decide (Continue, sd) = run sd
-    decide (Failure, x)   = (FailedRun, x)
+    run                   = (runState iterate) >>> decide
     decide (Success, x)   = (SuccessfulRun, x)
-    run                   = (runState performAStar) >>> decide
-
-performAStar :: AStarState Status
-performAStar =
-  do
-    SD _ gsdArr _ queue _ visiteds <- get
-    let poppedDataAndQueue = getFreshLoc (flip member visiteds) queue
-    let state              = iterateForStatus gsdArr poppedDataAndQueue
-    fmap (fromMaybe Failure) state
-  where
-    updateState :: SDGrid -> (PLocData, CoordQueue) -> AStarState ()
-    updateState gsdArr (PBundle _ loc, heap) = modify' $ updateStepData heap gsdArr loc
-
-    updateStepData :: CoordQueue -> SDGrid -> LocationData -> AStarStepData -> AStarStepData
-    updateStepData heap grid loc@(Loc coord gridSD) sd = sd { queue = heap, gridSDArr = updatedGrid, locPair = loc }
-      where
-        updatedGrid = grid // [(coord, Just gridSD)]
-
-    iterateForStatus :: SDGrid -> Maybe (PLocData, CoordQueue) -> AStarState (Maybe Status)
-    iterateForStatus grid = Traversable.mapM $ (updateState grid) >>> (>> iterate)
+    decide (Failure, x)   = (FailedRun, x)
+    decide (Continue, sd) = run sd
 
 iterate :: AStarState Status
 iterate =
   do
-    SD (ImmSD _ maxIters _ goal) _ (Loc freshCoord _) _ iters visiteds <- get
-    if (iters < maxIters)
-      then do
-        sd <- iterateOnNeighbors
-        let newSet = Set.insert freshCoord visiteds
-        put $ sd { visiteds = newSet, iters = iters + 1 }
-        return $ if goal == freshCoord
-                   then Success
-                   else Continue
-      else return Failure
-
-iterateOnNeighbors :: AStarState AStarStepData
-iterateOnNeighbors =
-  do
-    SD (ImmSD _ _ grid _) _ (Loc freshCoord _) _ _ visiteds <- get
-    let newState = mapM_ (updateStateIfFresh visiteds) $ neighborsOf freshCoord grid
-    mapState (\(_, s) -> (s, s)) newState
-  where
-    updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
-    updateStateIfFresh seen neighbor = when (not $ member neighbor seen) $ modify' (\sd -> sd { queue = enqueueNeighbor neighbor sd })
+    isPrimed <- primeState
+    SD (ImmSD _ maxIters grid goal) _ (Loc freshCoord _) _ iters visiteds <- get
+    if | goal == freshCoord                -> return Success
+       | not isPrimed || iters >= maxIters -> return Failure
+       | otherwise -> do
+           mapM_ (updateStateIfFresh visiteds) $ neighborsOf freshCoord grid
+           let visiteds' = Set.insert freshCoord visiteds
+           modify (\sd -> sd { visiteds = visiteds', iters = iters + 1 })
+           return Continue
+             where
+               updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
+               updateStateIfFresh seen neighbor =
+                 when (not $ member neighbor seen) $ modify (\sd -> sd { queue = enqueueNeighbor neighbor sd })
 
 enqueueNeighbor :: Coordinate -> AStarStepData -> CoordQueue
 enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = updatedQueue
@@ -91,13 +66,21 @@ enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)
             loc      = Loc neighbor $ GridSD (Crumb neighbor lB) newCost
             pcor     = PBundle (newCost + hValue) loc
 
-maxItersBy :: Int -> Int -> Double -> Int
-maxItersBy rows cols branchingFactor = rows |> ((*cols) >>> fromIntegral >>> (*branchingFactor) >>> floor)
-
-getFreshLoc :: (Coordinate -> Bool) -> CoordQueue -> Maybe (PLocData, CoordQueue)
-getFreshLoc checkIsFamiliar queue = view trimmedQueue
+primeState :: AStarState Bool
+primeState =
+  do
+    SD _ grid _ queue _ visiteds <- get
+    let updateSD = (updateStepData grid) >>> modify
+    queue |> ((popWhile $ flip member visiteds) >>> (Traversable.mapM updateSD) >>> (fmap isJust))
   where
-    trimmedQueue = Heap.dropWhile (item >>> lcoord >>> checkIsFamiliar) queue
+    popWhile :: (Coordinate -> Bool) -> CoordQueue -> Maybe (PLocData, CoordQueue)
+    popWhile checkIsFamiliar = (Heap.dropWhile $ item >>> lcoord >>> checkIsFamiliar) >>> view
+
+    updateStepData :: SDGrid -> (PLocData, CoordQueue) -> AStarStepData -> AStarStepData
+    updateStepData grid (PBundle _ loc@(Loc coord gridSD), heap) sd =
+      sd { queue = heap, gridSDArr = updatedGrid, locPair = loc }
+        where
+          updatedGrid = grid // [(coord, Just gridSD)]
 
 initialize :: PathingMapString -> AStarStepData
 initialize pmStr = SD immData gridSD (Loc start startData) queue 0 Set.empty
@@ -110,3 +93,6 @@ initialize pmStr = SD immData gridSD (Loc start startData) queue 0 Set.empty
     queue         = Heap.fromList [PBundle 0 $ Loc start startData]
     gridSD        = (fmap (const Nothing) grid) // [(start, Just startData)]
     immData       = ImmSD heuristicFunc maxIters grid goal
+
+maxItersBy :: Int -> Int -> Double -> Int
+maxItersBy rows cols branchingFactor = rows |> ((*cols) >>> fromIntegral >>> (*branchingFactor) >>> floor)
