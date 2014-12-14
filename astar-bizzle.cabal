@@ -1,5 +1,5 @@
 Name:                astar-bizzle
-Version:             1.1
+Version:             1.2
 Cabal-version:       >=1.16.0
 License:             BSD3
 License-File:        LICENSE.txt
@@ -25,7 +25,7 @@ library
     containers      >= 0.5,
     heap            >= 1.0,
     mtl             >= 2.2,
-    pathfindingcore >= 1.1
+    pathfindingcore >= 1.2
   GHC-Options:
     -Wall
     -fno-warn-name-shadowing
@@ -37,13 +37,13 @@ test-suite tests
   default-language: Haskell2010
   build-depends:
     array             >= 0.4,
-    astar-bizzle      >= 1.1,
+    astar-bizzle      >= 1.2,
     base              >= 4.6 && < 5,
     containers        >= 0.5,
     HUnit             >= 1.2,
-    lame-tester       >= 1.1,
+    lame-tester       >= 1.2,
     lens              >= 4.3,
-    pathfindingcore   >= 1.1,
+    pathfindingcore   >= 1.2,
     semigroups        >= 0.9,
     tasty             >= 0.10,
     tasty-hunit       >= 0.9,
