@@ -56,15 +56,15 @@ iterate =
 enqueueNeighbor :: Coordinate -> AStarStepData -> CoordQueue
 enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = updatedQueue
   where
-    newCost = lC + 1
+    newCost      = lC + 1
     updatedQueue = gridSD |> ((! neighbor) >>> (fmap $ cost >>> (newCost <)) >>> genQueue)
       where
         genQueue (Just False) = queue --Data exists and the new cost isn't any better
         genQueue _            = Heap.insert pcor queue
           where
-            hValue   = hValueOf neighbor
-            loc      = Loc neighbor $ GridSD (Crumb neighbor lB) newCost
-            pcor     = PBundle (newCost + hValue) loc
+            hValue = hValueOf neighbor
+            loc    = Loc neighbor $ GridSD (Crumb neighbor lB) newCost
+            pcor   = PBundle (newCost + hValue) loc
 
 primeState :: AStarState Bool
 primeState =

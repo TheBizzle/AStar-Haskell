@@ -53,10 +53,9 @@ evalResult (n, r) = testCase (show n) assertion
     assertion             = True @?= (res r)
 
 zipFrom :: (x -> [a]) -> (x -> [b]) -> x -> [(a, b)]
-zipFrom fas fbs = (diverge fas fbs) >>> zipTuple
+zipFrom fas fbs = (diverge fas fbs) >>> (uncurry zip)
   where
-    zipTuple (as, bs) = zip as bs
-    diverge fa fb x   = (fa x, fb x)
+    diverge fa fb x = (fa x, fb x)
 
 defaultTestSuite :: Suite PathingMapTest String String
 defaultTestSuite = Suite testMap runThatTest failsToStr id
@@ -65,9 +64,7 @@ defaultTestSuite = Suite testMap runThatTest failsToStr id
     failsToStr nel = unlines $ NEL.toList nel
 
 runThatTest :: PathingMapTest -> ResultType
-runThatTest (PathingMapTest distMaybe pms) = analyzeResult distMaybe result sd
-  where
-    (result, sd) = runAStar pms
+runThatTest (PathingMapTest distMaybe pms) = uncurry (analyzeResult distMaybe) $ runAStar pms
 
 analyzeResult :: (Show n, Num n) => Maybe n -> RunResult -> AStarStepData -> ResultType
 analyzeResult (Just x) SuccessfulRun sd = _Success # "Pathfinding successful"
@@ -81,6 +78,6 @@ failResult f sd = _Failure # (sd |> (processData >>> f >>> (:| [])))
 processData :: AStarStepData -> (Double, String)
 processData (SD (ImmSD _ _ pathingMap _) _ (Loc _ (GridSD breadcrumbs cost)) _ _ _) = (cost, mapString)
   where
-    path       = breadcrumbsToList breadcrumbs
-    markedMap  = insertPath path pathingMap
-    mapString  = show $ PPG markedMap
+    path      = breadcrumbsToList breadcrumbs
+    markedMap = insertPath path pathingMap
+    mapString = show $ PPG markedMap
