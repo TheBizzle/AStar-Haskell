@@ -40,12 +40,12 @@ iterate :: AStarState Status
 iterate =
   do
     isPrimed <- primeState
-    SD (ImmSD _ maxIters grid goal) _ (Loc freshCoord _) _ iters visiteds <- get
-    if | goal == freshCoord                -> return Success
+    SD (ImmSD _ maxIters grid goal) _ (Loc poppedCoord _) _ iters visiteds <- get
+    if | goal == poppedCoord               -> return Success
        | not isPrimed || iters >= maxIters -> return Failure
        | otherwise -> do
-           mapM_ (updateStateIfFresh visiteds) $ neighborsOf freshCoord grid
-           let visiteds' = Set.insert freshCoord visiteds
+           mapM_ (updateStateIfFresh visiteds) $ neighborsOf poppedCoord grid
+           let visiteds' = Set.insert poppedCoord visiteds
            modify (\sd -> sd { visiteds = visiteds', iters = iters + 1 })
            return Continue
              where
@@ -56,10 +56,11 @@ iterate =
 enqueueNeighbor :: Coordinate -> AStarStepData -> CoordQueue
 enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = updatedQueue
   where
-    newCost      = lC + 1
-    updatedQueue = gridSD |> ((! neighbor) >>> (fmap $ cost >>> (newCost <)) >>> genQueue)
+    newCost        = lC + 1
+    newCostIsLower = cost >>> (newCost <)
+    updatedQueue   = gridSD |> ((! neighbor) >>> (fmap newCostIsLower) >>> genQueue)
       where
-        genQueue (Just False) = queue --Data exists and the new cost isn't any better
+        genQueue (Just False) = queue -- The coord has already registered a cost that is at least as good
         genQueue _            = Heap.insert pcor queue
           where
             hValue = hValueOf neighbor
@@ -70,8 +71,11 @@ primeState :: AStarState Bool
 primeState =
   do
     SD _ grid _ queue _ visiteds <- get
-    let updateSD = (updateStepData grid) >>> modify
-    queue |> ((popWhile $ flip member visiteds) >>> (Traversable.mapM updateSD) >>> (fmap isJust))
+    let updateSD                 = (updateStepData grid) >>> modify
+    let drawUnvisitedCoordMaybe  = popWhile $ flip member visiteds
+    let updateSDAndInvert        = Traversable.mapM updateSD
+    let determineIfStateIsPrimed = fmap isJust
+    queue |> (drawUnvisitedCoordMaybe >>> updateSDAndInvert >>> determineIfStateIsPrimed)
   where
     popWhile :: (Coordinate -> Bool) -> CoordQueue -> Maybe (PLocData, CoordQueue)
     popWhile checkIsFamiliar = (Heap.dropWhile $ item >>> lcoord >>> checkIsFamiliar) >>> view
