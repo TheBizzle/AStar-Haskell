@@ -12,12 +12,12 @@ type SDGrid     = Array Coordinate (Maybe GridStepData)
 
 data AStarStepData
   = SD {
-    unSD      :: ImmutableStepData,
-    gridSDArr :: SDGrid,
-    locPair   :: LocationData,
-    queue     :: CoordQueue,
-    iters     :: Int,
-    visiteds  :: Set Coordinate -- We could do away with this and some of the cost-checking logic, I think, if we generalize this for only unidirectional A* with all edges having the same weight --JAB (8/23/14)
+    _unSD       :: ImmutableStepData,
+    _gridSDArr  :: SDGrid,
+    _locPair    :: LocationData,
+    _queue      :: CoordQueue,
+    _iters     :: Int,
+    _visiteds  :: Set Coordinate -- We could do away with this and some of the cost-checking logic, I think, if we generalize this for only unidirectional A* with all edges having the same weight --JAB (8/23/14)
   }
 
 data ImmutableStepData

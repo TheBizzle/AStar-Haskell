@@ -22,8 +22,10 @@ library
   build-depends:
     array           >= 0.4,
     base            >= 4.6 && < 5,
+    comonad         >= 4.2,
     containers      >= 0.5,
     heap            >= 1.0,
+    lens            >= 4.11,
     mtl             >= 2.2,
     pathfindingcore >= 1.2
   GHC-Options:
@@ -40,9 +42,10 @@ test-suite tests
     astar-bizzle      >= 1.2,
     base              >= 4.6 && < 5,
     containers        >= 0.5,
+    comonad           >= 4.2,
     HUnit             >= 1.2,
     lame-tester       >= 1.2,
-    lens              >= 4.3,
+    lens              >= 4.11,
     pathfindingcore   >= 1.2,
     semigroups        >= 0.9,
     tasty             >= 0.10,

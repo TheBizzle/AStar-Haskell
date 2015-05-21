@@ -1,9 +1,10 @@
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiWayIf, TemplateHaskell #-}
 module AStar.AStarLike(runAStar) where
 
 import Prelude hiding (iterate)
 
 import Control.Arrow((>>>))
+import Control.Lens(makeLenses, set)
 import Control.Monad.State(get, modify, runState, State, when)
 
 import Data.Array.IArray((!), (//), bounds)
@@ -20,8 +21,10 @@ import PathFindingCore.PathingMap.Coordinate(Breadcrumb(Crumb, Source), Coordina
 import PathFindingCore.PathingMap.Interpreter(fromMapString, PathingMapData(PathingMapData), PathingMapString)
 import PathFindingCore.Status(RunResult(FailedRun, SuccessfulRun))
 
-import AStar.AStarData(AStarStepData(gridSDArr, iters, locPair, queue, SD, visiteds), CoordQueue, GridStepData(cost, GridSD), ImmutableStepData(ImmSD), LocationData(lcoord, Loc), PriorityBundle(item, PBundle), SDGrid)
+import AStar.AStarData(AStarStepData(_queue, SD), CoordQueue, GridStepData(cost, GridSD), ImmutableStepData(ImmSD), LocationData(lcoord, Loc), PriorityBundle(item, PBundle), SDGrid)
 import AStar.Heuristic(manhattanDistance)
+
+makeLenses ''AStarStepData
 
 a |> f = f a
 
@@ -35,18 +38,18 @@ iterate :: AStarState RunResult
 iterate =
   do
     isPrimed <- primeState
-    SD (ImmSD _ maxIters grid goal) _ (Loc poppedCoord _) _ iters visiteds <- get
-    if | goal == poppedCoord               -> return SuccessfulRun
-       | not isPrimed || iters >= maxIters -> return FailedRun
+    SD (ImmSD _ maxIters grid goal) _ (Loc poppedCoord _) _ iterCount visitedCoords <- get
+    if | goal == poppedCoord                   -> return SuccessfulRun
+       | not isPrimed || iterCount >= maxIters -> return FailedRun
        | otherwise -> do
-           mapM_ (updateStateIfFresh visiteds) $ neighborsOf poppedCoord grid
-           let visiteds' = Set.insert poppedCoord visiteds
-           modify (\sd -> sd { visiteds = visiteds', iters = iters + 1 })
+           mapM_ (updateStateIfFresh visitedCoords) $ neighborsOf poppedCoord grid
+           let visitedCoords' = Set.insert poppedCoord visitedCoords
+           modify $ (set visiteds visitedCoords') . (set iters $ iterCount + 1)
            iterate
              where
                updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
                updateStateIfFresh seen neighbor =
-                 when (not $ member neighbor seen) $ modify (\sd -> sd { queue = enqueueNeighbor neighbor sd })
+                 when (not $ member neighbor seen) $ modify (\sd -> sd { _queue = enqueueNeighbor neighbor sd })
 
 enqueueNeighbor :: Coordinate -> AStarStepData -> CoordQueue
 enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = updatedQueue
@@ -76,8 +79,8 @@ primeState =
     popWhile checkIsFamiliar = (Heap.dropWhile $ item >>> lcoord >>> checkIsFamiliar) >>> view
 
     updateStepData :: SDGrid -> (PLocData, CoordQueue) -> AStarStepData -> AStarStepData
-    updateStepData grid (PBundle _ loc@(Loc coord gridSD), heap) sd =
-      sd { queue = heap, gridSDArr = updatedGrid, locPair = loc }
+    updateStepData grid (PBundle _ loc@(Loc coord gridSD), heap) =
+      (set queue heap) . (set gridSDArr updatedGrid) . (set locPair loc)
         where
           updatedGrid = grid // [(coord, Just gridSD)]
 
