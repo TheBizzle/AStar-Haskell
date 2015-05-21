@@ -18,7 +18,7 @@ import qualified Data.Traversable as Traversable
 import PathFindingCore.PathingMap(neighborsOf)
 import PathFindingCore.PathingMap.Coordinate(Breadcrumb(Crumb, Source), Coordinate(Coord))
 import PathFindingCore.PathingMap.Interpreter(fromMapString, PathingMapData(PathingMapData), PathingMapString)
-import PathFindingCore.Status(RunResult(FailedRun, SuccessfulRun), Status(Continue, Failure, Success))
+import PathFindingCore.Status(RunResult(FailedRun, SuccessfulRun))
 
 import AStar.AStarData(AStarStepData(gridSDArr, iters, locPair, queue, SD, visiteds), CoordQueue, GridStepData(cost, GridSD), ImmutableStepData(ImmSD), LocationData(lcoord, Loc), PriorityBundle(item, PBundle), SDGrid)
 import AStar.Heuristic(manhattanDistance)
@@ -29,25 +29,20 @@ type AStarState = State AStarStepData
 type PLocData   = PriorityBundle LocationData
 
 runAStar :: PathingMapString -> (RunResult, AStarStepData)
-runAStar = initialize >>> run
-  where
-    run                   = (runState iterate) >>> decide
-    decide (Success, x)   = (SuccessfulRun, x)
-    decide (Failure, x)   = (FailedRun, x)
-    decide (Continue, sd) = run sd
+runAStar = initialize >>> (runState iterate)
 
-iterate :: AStarState Status
+iterate :: AStarState RunResult
 iterate =
   do
     isPrimed <- primeState
     SD (ImmSD _ maxIters grid goal) _ (Loc poppedCoord _) _ iters visiteds <- get
-    if | goal == poppedCoord               -> return Success
-       | not isPrimed || iters >= maxIters -> return Failure
+    if | goal == poppedCoord               -> return SuccessfulRun
+       | not isPrimed || iters >= maxIters -> return FailedRun
        | otherwise -> do
            mapM_ (updateStateIfFresh visiteds) $ neighborsOf poppedCoord grid
            let visiteds' = Set.insert poppedCoord visiteds
            modify (\sd -> sd { visiteds = visiteds', iters = iters + 1 })
-           return Continue
+           iterate
              where
                updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
                updateStateIfFresh seen neighbor =
