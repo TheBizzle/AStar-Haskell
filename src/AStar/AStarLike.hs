@@ -1,16 +1,12 @@
 {-# LANGUAGE MultiWayIf, TemplateHaskell #-}
 module AStar.AStarLike(runAStar) where
 
-import Prelude hiding (iterate)
-
-import Control.Arrow((>>>))
-import Control.Lens(makeLenses, set)
-import Control.Monad.State(get, modify, runState, State, when)
+import Control.Lens(makeLensesFor, set)
+import Control.Monad.State(get, modify, runState, State, unless)
 
 import Data.Array.IArray((!), (//), bounds)
 import Data.Heap(view)
-import Data.Maybe(isJust)
-import Data.Set(member, Set)
+import Data.Set(member)
 
 import qualified Data.Heap        as Heap
 import qualified Data.Set         as Set
@@ -24,9 +20,8 @@ import PathFindingCore.Status(RunResult(FailedRun, SuccessfulRun))
 import AStar.AStarData(AStarStepData(_queue, SD), CoordQueue, GridStepData(cost, GridSD), ImmutableStepData(ImmSD), LocationData(lcoord, Loc), PriorityBundle(item, PBundle), SDGrid)
 import AStar.Heuristic(manhattanDistance)
 
-makeLenses ''AStarStepData
-
-a |> f = f a
+makeLensesFor [("_gridSDArr", "gridSDArr"), ("_locPair", "locPair"), ("_queue", "queue")
+             , ("_iters", "iters"), ("_visiteds", "visiteds")] ''AStarStepData
 
 type AStarState = State AStarStepData
 type PLocData   = PriorityBundle LocationData
@@ -49,7 +44,7 @@ iterate =
              where
                updateStateIfFresh :: Set Coordinate -> Coordinate -> AStarState ()
                updateStateIfFresh seen neighbor =
-                 when (not $ member neighbor seen) $ modify (\sd -> sd { _queue = enqueueNeighbor neighbor sd })
+                 unless (member neighbor seen) $ modify (\sd -> sd { _queue = enqueueNeighbor neighbor sd })
 
 enqueueNeighbor :: Coordinate -> AStarStepData -> CoordQueue
 enqueueNeighbor neighbor (SD (ImmSD hValueOf _ _ _) gridSD (Loc _ (GridSD lB lC)) queue _ _) = updatedQueue

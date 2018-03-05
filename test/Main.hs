@@ -1,6 +1,7 @@
 module Main where
 
-import AStarTests as AStar
 import Test.Tasty(defaultMain)
+
+import qualified AStarTests as AStar
 
 main = defaultMain AStar.tests

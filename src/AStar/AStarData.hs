@@ -2,7 +2,6 @@ module AStar.AStarData where
 
 import Data.Array.IArray(Array)
 import Data.Heap(Heap, MinPolicy)
-import Data.Set(Set)
 
 import PathFindingCore.PathingMap.Coordinate(Breadcrumb, Coordinate)
 import PathFindingCore.PathingMap.Interpreter(PathingGrid)
@@ -16,8 +15,8 @@ data AStarStepData
     _gridSDArr  :: SDGrid,
     _locPair    :: LocationData,
     _queue      :: CoordQueue,
-    _iters     :: Int,
-    _visiteds  :: Set Coordinate -- We could do away with this and some of the cost-checking logic, I think, if we generalize this for only unidirectional A* with all edges having the same weight --JAB (8/23/14)
+    _iters      :: Int,
+    _visiteds   :: Set Coordinate -- We could do away with this and some of the cost-checking logic, I think, if we generalize this for only unidirectional A* with all edges having the same weight --JAB (8/23/14)
   }
 
 data ImmutableStepData

@@ -1,10 +1,6 @@
 module AStar.Heuristic(euclideanDistance, HeuristicFunc, manhattanDistance) where
 
-import Control.Arrow((>>>))
-
 import PathFindingCore.PathingMap.Coordinate(Coordinate(Coord))
-
-a |> f = f a
 
 type HeuristicFunc = Coordinate -> Coordinate -> Double
 

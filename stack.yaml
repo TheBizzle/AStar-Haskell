@@ -1,0 +1,19 @@
+resolver: lts-10.8
+
+packages:
+- .
+
+allow-newer: true
+
+extra-deps:
+- base-noprelude-4.10.1.0
+- bizzlelude-1.2.0
+- containers-0.5.11.0
+- directory-1.3.2.1
+- lame-tester-1.4.0
+- lens-4.16
+- pathfindingcore-1.3.0
+- tasty-1.0.1
+- tasty-hunit-0.10.0.1
+- text-1.2.3.0
+- validation-1
